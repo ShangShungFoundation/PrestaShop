@@ -4419,24 +4419,26 @@ class ProductCore extends ObjectModel
 		if (!Group::isFeatureActive())
 			return true;
 
-		$cache_id = 'Product::checkAccess_'.(int)$this->id.'-'.(int)$id_customer.(!$id_customer ? '-'.(int)Group::getCurrent()->id : '');
+		$cache_id = 'Product::checkAccess_'.(int)$this->id.'-'.(int)$id_customer.(!$id_customer ? '-'.(int)$this->id_category_default : '');
+		
 		if (!Cache::isStored($cache_id))
 		{
 			if (!$id_customer)
 				$result = (bool)Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue('
-				SELECT ctg.`id_group`
-				FROM `'._DB_PREFIX_.'category_product` cp
-				INNER JOIN `'._DB_PREFIX_.'category_group` ctg ON (ctg.`id_category` = cp.`id_category`)
-				WHERE cp.`id_product` = '.(int)$this->id.' AND ctg.`id_group` = '.(int)Group::getCurrent()->id);
+                SELECT `id_group`
+                FROM `'._DB_PREFIX_.'category_group`
+                WHERE `id_group` IN (1, 2) AND `id_category` = '.(int)$this->id_category_default);
 			else
 				$result = (bool)Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue('
 				SELECT cg.`id_group`
-				FROM `'._DB_PREFIX_.'category_product` cp
-				INNER JOIN `'._DB_PREFIX_.'category_group` ctg ON (ctg.`id_category` = cp.`id_category`)
-				INNER JOIN `'._DB_PREFIX_.'customer_group` cg ON (cg.`id_group` = ctg.`id_group`)
-				WHERE cp.`id_product` = '.(int)$this->id.' AND cg.`id_customer` = '.(int)$id_customer);
+                FROM `'._DB_PREFIX_.'category_product` cp
+                INNER JOIN `'._DB_PREFIX_.'category_group` ctg ON (ctg.`id_category` = cp.`id_category`)
+                INNER JOIN `'._DB_PREFIX_.'customer_group` cg ON (cg.`id_group` = ctg.`id_group`)
+                WHERE cp.`id_product` = '.(int)$this->id.' AND cg.`id_customer` = '.(int)$id_customer.' AND ctg.`id_category` = '.(int)$this->id_category_default);
+			print_r ($this->id_category_default);
 			Cache::store($cache_id, $result);
 		}
+		
 		return Cache::retrieve($cache_id);
 	}
 
